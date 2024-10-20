@@ -1,0 +1,7 @@
+---
+apiVersion: v2
+name: sftp-nginx-server
+description: A Helm chart for https://github.com/atmoz/sftp
+type: application
+version: 0.5.2
+sources: ["https://github.com/akunich/helm-charts"]

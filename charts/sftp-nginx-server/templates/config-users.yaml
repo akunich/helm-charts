@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sftp-nginx-server.fullname" . }}-users
+  labels:
+    {{- include "sftp-nginx-server.labels" . | nindent 4 }}
+data:
+  users.conf: |
+  {{- range $i, $user := .Values.sftp.users }}
+    {{ $user.name }}:{{ $user.pass }}:{{ if $user.passEncrypted }}e:{{ end }}{{ $user.uid}}:{{ $user.gid }}:{{ join "," $user.dirs }}
+  {{- end }}

@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sftp-nginx-server.fullname" . }}
+  labels:
+    {{- include "sftp-nginx-server.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  {{- if $.Values.service.externalTraffic.enabled }}
+  externalTrafficPolicy: {{ .Values.service.externalTraffic.policy }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: ssh
+      {{- if .Values.service.nodePort }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+      {{- if .Values.service.loadBalancerIP }}
+      loadBalancerIP: {{ .Values.service.loadBalancerIP }}
+      {{- end }}
+      protocol: TCP
+      name: ssh
+  selector:
+    {{- include "sftp-nginx-server.selectorLabels" . | nindent 4 }}

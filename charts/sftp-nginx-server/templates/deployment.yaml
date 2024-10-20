@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sftp-nginx-server.fullname" . }}
+  labels:
+    {{- include "sftp-nginx-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sftp-nginx-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config-users: {{ include (print .Template.BasePath "/config-users.yaml") . | sha256sum }}
+        checksum/config-keys: {{ include (print .Template.BasePath "/config-keys.yaml") . | sha256sum }}
+        checksum/host-keys: {{ include (print .Template.BasePath "/secret.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "sftp-nginx-server.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "sftp-nginx-server.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+      {{- if .Values.extraInitContainers }}
+        {{- toYaml .Values.extraInitContainers | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: ssh
+              containerPort: 22
+              protocol: TCP
+          {{- if .Values.probes.startup }}
+          startupProbe:
+            tcpSocket:
+              port: ssh
+          {{- end }}
+          {{- if .Values.probes.liveness }}
+          livenessProbe:
+            tcpSocket:
+              port: ssh
+          {{- end }}
+          {{- if .Values.probes.readiness }}
+          readinessProbe:
+            tcpSocket:
+              port: ssh
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.extraVolumeMounts }}
+              {{- toYaml .Values.extraVolumeMounts | nindent 12 }} 
+            {{- end }}
+            - name: config-users
+              mountPath: /etc/sftp/
+            {{- if .Values.sftp.hostKeys.ed25519 }}
+            - name: host-keys
+              mountPath: /etc/ssh/ssh_host_ed25519_key
+              subPath: ssh_host_ed25519_key
+            {{- end }}
+            {{- if .Values.sftp.hostKeys.rsa }}
+            - name: host-keys
+              mountPath: /etc/ssh/ssh_host_rsa_key
+              subPath: ssh_host_rsa_key
+            {{- end }}
+            {{- range $i, $user := .Values.sftp.users }}
+            {{- if $user.pubKeys }}
+            - name: config-auth-{{ $user.name }}
+              mountPath: "/home/{{ $user.name }}/.ssh/keys"
+            {{- end }}
+            {{- end }}
+            {{- if .Values.persistentVolume.enabled }}
+            {{- range $i, $user := .Values.sftp.users }}
+            - name: storage-volume
+              mountPath: "/home/{{ $user.name }}"
+              subPath: "{{ $.Values.persistentVolume.subPath }}/{{ $user.name }}"
+            {{- end }}
+            {{- end }}
+      {{- if .Values.extraContainers }}
+        {{- toYaml .Values.extraContainers | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if .Values.extraVolumes }}
+          {{- toYaml .Values.extraVolumes | nindent 6 }} 
+        {{- end }}
+      - name: config-users
+        configMap:
+          name: {{ include "sftp-nginx-server.fullname" . }}-users
+      {{- if .Values.sftp.hostKeys }}
+      - name: host-keys
+        secret:
+          secretName: {{ include "sftp-nginx-server.fullname" $ }}
+          defaultMode: 0400
+      {{- end }}
+      {{- range $i, $user := .Values.sftp.users }}
+      {{- if $user.pubKeys }}
+      - name: config-auth-{{ $user.name }}
+        configMap:
+          name: {{ include "sftp-nginx-server.fullname" $ }}-auth-{{ $user.name }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.persistentVolume.enabled }}
+      - name: storage-volume
+        persistentVolumeClaim:
+          claimName: {{ if .Values.persistentVolume.existingClaim }}{{ .Values.persistentVolume.existingClaim }}{{- else }}{{ template "sftp-nginx-server.fullname" . }}{{- end }}
+      {{- end -}}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

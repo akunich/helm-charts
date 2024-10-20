@@ -1,0 +1,156 @@
+---
+# Default values for sftp.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/atmoz/sftp/alpine
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+sftp:
+  hostKeys:
+    # -- private ED25519 host key
+    ed25519: ""
+    # -- private RSA host key
+    rsa: ""
+  users:
+    - name: demo
+      pass: demo
+      # -- password is encrypted ([doc](https://github.com/atmoz/sftp/blob/ffeb104beec76cc622abda34ee2132c790b5559c/README.md#encrypted-password))
+      passEncrypted: false
+      uid: ""
+      guid: ""
+      dirs:
+        - upload
+      # -- public user keys ([doc](https://github.com/atmoz/sftp/blob/ffeb104beec76cc622abda34ee2132c790b5559c/README.md#logging-in-with-ssh-keys))
+      pubKeys: []
+
+# -- Additional Init containers of the pod.
+extraInitContainers: []
+
+# -- Additional containers of the pod.
+extraContainers: []
+
+# -- Additional volumes of the pod.
+extraVolumes: []
+  # - name: my-config
+  #   configMap:
+  #     name: my-config
+
+# -- Additional volume mounts of the pod.
+extraVolumeMounts: []
+  # - name: my-config
+  #   mountPath: /my-config/
+
+persistentVolume:
+  enabled: false
+  # -- Must match those of existing PV or dynamic provisioner
+  # ([Kubernetes docs](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes))
+  accessModes:
+    - ReadWriteOnce
+  annotations: {}
+
+  # -- If defined, PVC must be created manually before volume will be bound
+  existingClaim: ""
+  size: 8Gi
+
+  # -- If defined, storageClassName: <storageClass>
+  # If set to "-", storageClassName: "", which disables dynamic provisioning
+  # If undefined (the default) or set to null, no storageClassName spec is
+  #   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  #   GKE, AWS & OpenStack)
+  #
+  storageClass: null
+
+  # -- If defined, volumeBindingMode: <volumeBindingMode>
+  # If undefined (the default) or set to null, no volumeBindingMode spec is
+  #   set, choosing the default mode.
+  #
+  volumeBindingMode: null
+
+  # -- Subdirectory of SFTP server data Persistent Volume to mount
+  # Useful if the volume's root directory is not empty
+  #
+  subPath: ""
+
+  # -- Persistent Volume Claim Selector
+  # Useful if Persistent Volumes have been provisioned in advance
+  # ([Kubernetes docs](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#selector)
+  #
+  # selector:
+  #  matchLabels:
+  #    release: "stable"
+  #  matchExpressions:
+  #    - { key: environment, operator: In, values: [ dev ] }
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: false
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  # -- If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 22
+  # -- When using the NodePort type, you can specify a fixed port ([Kubernetes docs](https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport))
+  nodePort: 0 
+  # -- When using the LoadBalancer type.
+  loadBalancerIP: 0
+  externalTraffic:
+    # -- externalTrafficPolicy ([Kubernetes docs](https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip))
+    enabled: false
+    policy: "Local"
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+probes:
+  # -- Enable startup probe
+  startup: true
+  # -- Enable liveness probe
+  liveness: true
+  # -- Enable readiness probe
+  readiness: true
+
+# -- Extra manifests to deploy as an array
+extraManifests: []
+  # - apiVersion: v1
+  #   kind: ConfigMap
+  #   metadata:
+  #     name: sftp-extra
+  #   data:
+  #     extra-data: "value"
