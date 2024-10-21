@@ -122,8 +122,10 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
-  # capabilities:
+securityContext: 
+  capabilities:
+    add:
+    - SYS_CHROOT
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
