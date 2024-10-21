@@ -85,7 +85,6 @@ spec:
             {{- if .Values.persistentVolume.enabled }}
             {{- range $i, $user := .Values.sftp.users }}
             - name: storage-volume
-              # mountPath: "/home"
               mountPath: "/home/{{ $user.name }}"
               {{- if $.Values.persistentVolume.subPath }}
               subPath: "{{ $.Values.persistentVolume.subPath }}/{{ $user.name }}"
@@ -102,8 +101,8 @@ spec:
           volumeMounts:
             - name: config-nginx
               mountPath: /etc/nginx/conf.d
-            - mountPath: /home
-              name: storage-volume
+            - name: storage-volume
+              mountPath: /home
       {{- if .Values.extraContainers }}
         {{- toYaml .Values.extraContainers | nindent 8 }}
       {{- end }}
