@@ -85,12 +85,13 @@ spec:
             {{- if .Values.persistentVolume.enabled }}
             {{- range $i, $user := .Values.sftp.users }}
             - name: storage-volume
-              mountPath: "/home/{{ $user.name }}"
-              {{- if $.Values.persistentVolume.subPath }}
-              subPath: "{{ $.Values.persistentVolume.subPath }}/{{ $user.name }}"
-              {{- else }}
-              subPath: "{{ $user.name }}"
-              {{- end }}
+              mountPath: "/home"
+              # mountPath: "/home/{{ $user.name }}"
+              # {{- if $.Values.persistentVolume.subPath }}
+              # subPath: "{{ $.Values.persistentVolume.subPath }}/{{ $user.name }}"
+              # {{- else }}
+              # subPath: "{{ $user.name }}"
+              # {{- end }}
             {{- end }}
             {{- end }}
         - name: {{ .Chart.Name }}-nginx
